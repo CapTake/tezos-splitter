@@ -1,0 +1,6 @@
+namespace SS {
+    export type t = {
+        total : nat,
+        shares : map<address, nat>
+    };
+}

@@ -1,0 +1,108 @@
+{ parameter
+    (or (unit %default)
+        (option %distribute (pair (nat %amount) (pair %token address nat)))) ;
+  storage (pair (map %shares address nat) (nat %total)) ;
+  code { UNPAIR ;
+         IF_LEFT
+           { DROP ; NIL operation }
+           { IF_NONE
+               { BALANCE ;
+                 NIL operation ;
+                 DUP 3 ;
+                 CAR ;
+                 ITER { UNPAIR ;
+                        DIG 2 ;
+                        SWAP ;
+                        CONTRACT unit ;
+                        IF_NONE { PUSH string "option is None" ; FAILWITH } {} ;
+                        DUP 5 ;
+                        CDR ;
+                        DIG 3 ;
+                        DUP 5 ;
+                        MUL ;
+                        EDIV ;
+                        IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+                        CAR ;
+                        UNIT ;
+                        TRANSFER_TOKENS ;
+                        CONS } ;
+                 SWAP ;
+                 DROP }
+               { DUP ;
+                 CDR ;
+                 CAR ;
+                 CONTRACT %transfer
+                   (list (pair (address %from_) (list %txs (pair (address %to_) (nat %token_id) (nat %amount))))) ;
+                 IF_NONE
+                   { PUSH nat 0 ;
+                     DUP 2 ;
+                     CDR ;
+                     CDR ;
+                     COMPARE ;
+                     EQ ;
+                     IF {} { PUSH string "Token Id 0 expected" ; FAILWITH } ;
+                     DUP ;
+                     CDR ;
+                     CAR ;
+                     CONTRACT %transfer (pair (address %from) (address %to) (nat %value)) ;
+                     IF_NONE { PUSH string "option is None" ; FAILWITH } {} ;
+                     NIL operation ;
+                     DUP 4 ;
+                     CAR ;
+                     ITER { UNPAIR ;
+                            DIG 2 ;
+                            DUP 4 ;
+                            PUSH mutez 0 ;
+                            DUP 8 ;
+                            CDR ;
+                            DIG 5 ;
+                            DUP 8 ;
+                            CAR ;
+                            MUL ;
+                            EDIV ;
+                            IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+                            CAR ;
+                            DIG 4 ;
+                            SELF_ADDRESS ;
+                            PAIR 3 ;
+                            TRANSFER_TOKENS ;
+                            CONS } ;
+                     SWAP ;
+                     DIG 2 ;
+                     DROP 2 }
+                   { NIL (pair address nat nat) ;
+                     DUP 4 ;
+                     CAR ;
+                     ITER { UNPAIR ;
+                            DIG 2 ;
+                            DUP 6 ;
+                            CDR ;
+                            DIG 3 ;
+                            DUP 6 ;
+                            CAR ;
+                            MUL ;
+                            EDIV ;
+                            IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+                            CAR ;
+                            DUP 5 ;
+                            CDR ;
+                            CDR ;
+                            DIG 3 ;
+                            PAIR 3 ;
+                            CONS } ;
+                     DIG 2 ;
+                     DROP ;
+                     DIG 2 ;
+                     NIL operation ;
+                     DIG 3 ;
+                     PUSH mutez 0 ;
+                     NIL (pair address (list (pair address nat nat))) ;
+                     DIG 5 ;
+                     SELF_ADDRESS ;
+                     PAIR ;
+                     CONS ;
+                     TRANSFER_TOKENS ;
+                     CONS } } } ;
+         PAIR } ;
+  view "shares" unit (map address nat) { CDR ; CAR } }
+

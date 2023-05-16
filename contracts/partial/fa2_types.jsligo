@@ -1,0 +1,48 @@
+export type token_id = nat;
+export type operator = address;
+export type owner = address;
+
+export type tx = 
+// @layout comb
+{
+    to_: address,
+    token_id: nat, 
+    amount: nat
+};
+
+export type txList = list<tx>;
+
+export type transfer_batch = {
+    from_: address,
+    txs: txList
+};
+
+export type transfer_param = list<transfer_batch>;
+
+export type balance_of_request = {
+    owner       : address,
+    token_id    : token_id
+};
+
+export type balance_of_response = {
+    request     : balance_of_request,
+    balance     : nat
+};
+
+export type balance_of_params = {
+    requests    : list<balance_of_request>,
+    callback    : contract<list<balance_of_response>>
+};
+
+export type operator_param = {
+  owner : address,
+  operator : address,
+  token_id: nat
+};
+
+export type update_operator = 
+  | ["Add_operator", operator_param]
+  | ["Remove_operator", operator_param]
+  ;
+
+export type update_operators_param = list<update_operator>;

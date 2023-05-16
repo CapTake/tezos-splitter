@@ -1,0 +1,8 @@
+export type send_t = 
+// @layout comb
+{
+    /* @annot from */ from_: address,
+    to: address,
+    value: nat
+};
+export type fa12_transfer_t    = ["FA12_transfer", send_t];

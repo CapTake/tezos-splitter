@@ -1,0 +1,51 @@
+type storage = {
+    splitters: nat,
+    holders: big_map<[address, address], timestamp>,
+    metadata: big_map<string, bytes>
+};
+type splitter_storage = {
+        total : nat,
+        shares : map<address, nat>
+};
+
+type return_ = [list<operation>, storage];
+
+const originate_contract = (p: [option<key_hash>, tez, splitter_storage]) : [operation, address] =>
+    (Michelson `{ 
+        UNPAIR ;
+        UNPAIR ;
+        CREATE_CONTRACT 
+#include "./Splitter.tz"
+        ;
+        PAIR }`
+        as ((p: [option<key_hash>, tez, splitter_storage]) => [operation, address])
+    )(p);
+
+const main = (p : map<address, nat>, s : storage) : return_ => {
+    let total : nat = 0 as nat;
+    let parts : nat = 0 as nat;
+
+    for (const item of p) {
+        assert_with_error(item[1] > (0 as nat), "Share must be greater than 0");
+
+        parts += 1 as nat;
+
+        total += item[1];
+    };
+
+    assert_with_error(parts > (1 as nat), "At least 2 shareholders required");
+
+    let splitters = s.splitters + (1 as nat);
+
+    let holders = s.holders;
+
+    let delegate : option<key_hash> = (None() as option<key_hash>);
+
+    const originate = originate_contract([delegate, 0 as tez, { total: total, shares: p } as splitter_storage]);
+
+    for (const item of p) {
+        holders = Big_map.add([item[0], originate[1]], Tezos.get_now(), holders)
+    };
+
+    return [list([originate[0], Tezos.emit("%splitter_created", [Tezos.get_sender(), originate[1]])]), { ...s, splitters, holders }];
+}

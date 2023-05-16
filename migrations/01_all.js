@@ -2,7 +2,7 @@ const { TezosToolkit, MichelCodecPacker } = require("@taquito/taquito")
 const { InMemorySigner } = require("@taquito/signer")
 
 const { migrate } = require("../scripts/helpers")
-const storage = require("../storage/Token")
+const storage = require("../storage/Factory")
 
 module.exports = async (tezos, network) => {
 
@@ -17,12 +17,12 @@ module.exports = async (tezos, network) => {
     signer,
   })
 
-  console.log('Deploing FA2')
+  console.log('Factory')
   storage.default.owner = ADMIN
   const minteryAddress = await migrate(
     tezos,
-    "Token",
+    "Factory",
     storage
   )
-  console.log(`Token: ${minteryAddress}`)
+  console.log(`address: ${minteryAddress}`)
 }

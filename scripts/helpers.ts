@@ -42,8 +42,8 @@ export const getLigo = (
 export const getContractsList = () => {
   return fs
     .readdirSync(env.contractsDir)
-    .filter((file) => file.endsWith(".ligo"))
-    .map((file) => file.slice(0, file.length - 5));
+    .filter((file) => file.endsWith(".jsligo"))
+    .map((file) => file.slice(0, file.length - 7));
 };
 
 export const getMigrationsList = () => {
@@ -67,9 +67,9 @@ export const compile = async (
 
   contracts.forEach((contract) => {
     const michelson: string = execSync(
-      `${ligo} compile contract $PWD/${contractsDir}/${contract}.ligo ${
+      `${ligo} compile contract $PWD/${contractsDir}/${contract}.jsligo ${
         format === "json" ? "--michelson-format json" : ""
-      } --protocol kathmandu`,
+      }`,
       { maxBuffer: 1024 * 500 }
     ).toString();
 
@@ -119,7 +119,7 @@ export const compileLambdas = async (
   try {
     for (const lambda of lambdas) {
       const michelson = execSync(
-        `${ligo} compile expression pascaligo 'Bytes.pack(${lambda.name})' --michelson-format json --init-file $PWD/${contract} --protocol kathmandu`,
+        `${ligo} compile expression pascaligo 'Bytes.pack(${lambda.name})' --michelson-format json --init-file $PWD/${contract} --deprecated`,
         { maxBuffer: 1024 * 500 }
       ).toString();
 

@@ -1,0 +1,78 @@
+#include "../partial/fa2_types.jsligo"
+#include "../partial/fa12_types.jsligo"
+
+type storage = {
+    total : nat,
+    shares : map<address, nat>
+};
+
+type distribute_param = {
+    amount: nat,
+    token: [address, nat],
+};
+
+type action =
+ | ["Default"]
+ | ["Distribute", option<distribute_param>]
+ ;
+
+type fa2 = contract<transfer_param>;
+type fa12 = contract<send_t>;
+
+type return_ = [list<operation>, storage];
+
+const noop : list<operation> = list([]);
+
+const distribute_tez = (b : tez, s : storage) : return_ => {
+    let ops : list<operation> = list([]);
+
+    for (const item of s.shares) {
+        let [dest, share] = item;
+        ops = list([Tezos.transaction(unit, b * share / s.total, Option.unopt(Tezos.get_contract_opt(dest)) as contract<unit>), ...ops]);
+    };
+    return [ops, s];
+};
+
+const distribute_tokens = (p : distribute_param, s : storage) : return_ =>
+    match((Tezos.get_entrypoint_opt("%transfer", p.token[0]) as option<fa2>), {
+        None: () => {
+            assert_with_error(p.token[1] == (0 as nat), "Token Id 0 expected");
+
+            const fa12c = Option.unopt((Tezos.get_entrypoint_opt("%transfer", p.token[0]) as option<fa12>));
+
+            let ops : list<operation> = list([]);
+
+            for (const item of s.shares) {
+                const [dest, share] = item;
+                ops = list([Tezos.transaction({from_: Tezos.get_self_address(), to: dest, value: p.amount * share / s.total}, (0 as tez), fa12c), ...ops]);
+            };
+            return [ops, s];
+        },
+
+        Some: (fa2c) => {
+            let txs : list<tx> = list([]);
+
+            for (const item of s.shares) {
+                const [dest, share] = item;
+                txs = list([{to_: dest, amount: p.amount * share / s.total, token_id: p.token[1]}, ...txs]);
+            };
+            return [
+                list([
+                    Tezos.transaction(list([{from_: Tezos.get_self_address(), txs: txs}]), (0 as tez), fa2c)
+                ]),
+                s
+            ];
+        }
+    });
+
+const main = (p : action, s : storage) : return_ =>
+    match(p, {
+        Default: () => [noop, s],
+        Distribute: p => match(p, {
+            None: () => distribute_tez(Tezos.get_balance(), s),
+            Some: (param: distribute_param) => distribute_tokens(param, s)
+        })
+    });
+
+// @view
+const shares = (_ : unit, s : storage) : map<address, nat> => s.shares

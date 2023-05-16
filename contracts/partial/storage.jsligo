@@ -1,0 +1,37 @@
+namespace STORAGE {
+    export type token_id = nat;
+    export type operator = address;
+    export type owner = address;
+
+    export type token_meta = {
+        token_id   : token_id,
+        token_info : map<string, bytes>
+    };
+
+    export type operator_storage = big_map<[owner, operator], unit>;
+
+    export type ledger = big_map<owner, nat>;
+
+    export type t = {
+        credit         : tez, // sum of tz withdrawn
+        debits         : big_map<owner, tez>, // owner shares * debit
+        token_credits  : big_map<[address, token_id], nat>,
+        token_debits   : big_map<owner, map<[address, token_id], nat>>,
+        ledger         : ledger,
+        metadata       : big_map<string, bytes>,
+        operators      : operator_storage,
+        token_metadata : big_map<token_id, token_meta>,
+        total_supply   : nat
+    };
+
+    const get_balance = (owner : owner, s : t) : nat => Option.value(0 as nat, Big_map.find_opt(owner, s.ledger));
+
+    const get_tez_debit = (owner : owner, s : t) : tez => Option.value(0 as tez, Big_map.find_opt(owner, s.debits));
+
+    const get_credit = (kt : address, id : token_id, s : t) : nat => Option.value(0 as nat, Big_map.find_opt([kt, id], s.token_credits));
+
+    const get_debit = (owner : owner, kt : address, id : token_id, s : t) : nat => match(Big_map.find_opt(owner, s.token_debits), {
+        None: () => 0 as nat,
+        Some: m => Option.value(0 as nat, Map.find_opt([kt, id], m))
+    });
+}
