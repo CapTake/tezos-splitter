@@ -1,4 +1,4 @@
-# Tezos NFT tokensale contracts
+# Tezos Splitter
 
 
 # Requiremets
